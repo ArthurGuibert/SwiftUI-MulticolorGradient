@@ -1,11 +1,11 @@
 import SwiftUI
 
 public struct MulticolorGradient: UIViewControllerRepresentable {
-    internal var points: [MulticolorGradientPoint] = []
+    internal var points: [ColorStop] = []
     private var bias: Float
     private var power: Float
     
-    init(points: [MulticolorGradientPoint], bias: Float = 0.001, power: Float = 2.0) {
+    init(points: [ColorStop], bias: Float = 0.001, power: Float = 2.0) {
         self.points = points
         self.bias = bias
         self.power = power
@@ -36,7 +36,7 @@ extension MulticolorGradient {
     }
 }
 
-public struct MulticolorGradientPoint {
+public struct ColorStop {
     let position: UnitPoint
     let color: Color
     
@@ -48,17 +48,17 @@ public struct MulticolorGradientPoint {
 
 @resultBuilder
 public struct MulticolorGradientPointBuilder {
-    public static func buildBlock(_ cells: MulticolorGradientPoint...) -> [MulticolorGradientPoint] {
+    public static func buildBlock(_ cells: ColorStop...) -> [ColorStop] {
       Array(cells)
     }
 }
 
 extension MulticolorGradient {
-    public init(@MulticolorGradientPointBuilder _ content: () -> [MulticolorGradientPoint]) {
+    public init(@MulticolorGradientPointBuilder _ content: () -> [ColorStop]) {
       self.init(points: content())
     }
     
-    public init(@MulticolorGradientPointBuilder _ content: () -> MulticolorGradientPoint) {
+    public init(@MulticolorGradientPointBuilder _ content: () -> ColorStop) {
       self.init(points: [content()])
     }
 }

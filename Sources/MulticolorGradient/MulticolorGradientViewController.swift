@@ -46,7 +46,7 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
     var computePipelineState: MTLComputePipelineState?
     var commandQueue: MTLCommandQueue! = nil
 
-    var points: [MulticolorGradientPoint] = []
+    var points: [ColorStop] = []
     var bias: Float = 0.001
     var power: Float = 2
     
