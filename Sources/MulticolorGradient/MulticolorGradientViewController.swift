@@ -51,12 +51,14 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         var bias: Float = 0.001
         var power: Float = 2
     }
-    
+    var colorInterpolation: MulticolorGradient.ColorInterpolation = .rgb
     var current: GradientParameters = .init()
     var nextGradient: GradientParameters?
     
     var duration: TimeInterval?
     var elapsed: TimeInterval = 0.0
+    var timeDirection: Double = 1
+    var repeatForever: Bool = false
     var previousFrameTime: Date = .init()
     
     var finishedCompiling: ((Bool, [CompilerErrorMessage]?) -> ())?
@@ -116,7 +118,9 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
     func animate(to parameters: GradientParameters, animation: MirrorAnimation) {
         current = computeParameters()
         nextGradient = parameters
-        self.duration = animation.duration
+        duration = animation.duration
+        timeDirection = 1.0
+        repeatForever = animation.repeatAnimation != nil && animation.repeatAnimation!.count == nil
         elapsed = -animation.delay
     }
     
@@ -219,25 +223,42 @@ private extension MulticolorGradientViewController {
             return
         }
         
-        elapsed += timeStep
+        elapsed += timeStep * timeDirection
+        
+        if elapsed < 0 {
+            elapsed = 0
+            timeDirection = 1.0
+        }
         
         if elapsed > duration {
-            current = nextGradient
-            self.duration = nil
-            self.nextGradient = nil
+            if repeatForever {
+                timeDirection = -1.0
+                elapsed = duration
+            } else {
+                current = nextGradient
+                self.duration = nil
+                self.nextGradient = nil
+            }
         }
     }
     
     func computeParameters() -> GradientParameters {
         if let duration, let nextGradient, elapsed >= 0 {
             var parameters: GradientParameters = .init()
-            parameters.power = current.power + (nextGradient.power - current.power) * Float(elapsed / duration)
-            parameters.bias = current.bias + (nextGradient.bias - current.bias) * Float(elapsed / duration)
+            let mappedTime = elapsed / duration
+            parameters.power = current.power + (nextGradient.power - current.power) * Float(mappedTime)
+            parameters.bias = current.bias + (nextGradient.bias - current.bias) * Float(mappedTime)
             
             for i in 0..<nextGradient.points.count {
-                let position = UnitPoint(x: current.points[i].position.x + (nextGradient.points[i].position.x - current.points[i].position.x) * elapsed / duration,
-                                         y: current.points[i].position.y + (nextGradient.points[i].position.y - current.points[i].position.y) * elapsed / duration)
-                let p = ColorStop(position: position, color: nextGradient.points[i].color)
+                let position = current.points[i].position.lerp(to: nextGradient.points[i].position, t: mappedTime)
+                let p: ColorStop
+                if colorInterpolation == .rgb {
+                    p = ColorStop(position: position,
+                                      color: current.points[i].color.lerp(to: nextGradient.points[i].color, t: mappedTime))
+                } else {
+                    p = ColorStop(position: position,
+                                      color: current.points[i].color.lerpHSB(to: nextGradient.points[i].color, t: mappedTime))
+                }
                 parameters.points.append(p)
             }
             
@@ -245,5 +266,49 @@ private extension MulticolorGradientViewController {
         } else {
             return current
         }
+    }
+}
+
+extension UnitPoint {
+    func lerp(to: UnitPoint, t: Double) -> UnitPoint {
+        return UnitPoint(x: x + (to.x - x) * t, y: y + (to.y - y) * t)
+    }
+}
+
+extension Color {
+    func lerp(to: Color, t: Double) -> Color {
+        let uiColor = UIColor(self)
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        uiColor.getRed(&r, green: &g, blue: &b, alpha: nil)
+        
+        let uiColor2 = UIColor(to)
+        var r2: CGFloat = 0
+        var g2: CGFloat = 0
+        var b2: CGFloat = 0
+        uiColor2.getRed(&r2, green: &g2, blue: &b2, alpha: nil)
+        
+        return Color(red: r + (r2 - r) * t,
+                     green: g + (g2 - g) * t,
+                     blue: b + (b2 - b) * t)
+    }
+    
+    func lerpHSB(to: Color, t: Double) -> Color {
+        let uiColor = UIColor(self)
+        var h: CGFloat = 0
+        var s: CGFloat = 0
+        var b: CGFloat = 0
+        uiColor.getHue(&h, saturation: &s, brightness: &b, alpha: nil)
+        
+        let uiColor2 = UIColor(to)
+        var h2: CGFloat = 0
+        var s2: CGFloat = 0
+        var b2: CGFloat = 0
+        uiColor2.getHue(&h2, saturation: &s2, brightness: &b2, alpha: nil)
+        
+        return Color(hue: h + (h2 - h) * t,
+                     saturation: s + (s2 - s) * t,
+                     brightness: b + (b2 - b) * t)
     }
 }

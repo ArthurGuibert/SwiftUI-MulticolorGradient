@@ -4,11 +4,17 @@ public struct MulticolorGradient: UIViewControllerRepresentable {
     internal var points: [ColorStop] = []
     private var bias: Float
     private var power: Float
+    private var colorInterpolation: ColorInterpolation
     
-    init(points: [ColorStop], bias: Float = 0.001, power: Float = 2.0) {
+    public enum ColorInterpolation {
+        case rgb, hsb
+    }
+    
+    init(points: [ColorStop], bias: Float = 0.001, power: Float = 2.0, colorInterpolation: ColorInterpolation = .rgb) {
         self.points = points
         self.bias = bias
         self.power = power
+        self.colorInterpolation = colorInterpolation
     }
     
     public func makeUIViewController(context: UIViewControllerRepresentableContext<MulticolorGradient>) -> MulticolorGradientViewController {
@@ -16,6 +22,7 @@ public struct MulticolorGradient: UIViewControllerRepresentable {
         controller.current.points = points
         controller.current.bias = bias
         controller.current.power = power
+        controller.colorInterpolation = colorInterpolation
         return controller
     }
     
@@ -34,11 +41,15 @@ public struct MulticolorGradient: UIViewControllerRepresentable {
 
 extension MulticolorGradient {
     public func bias(_ value: Float) -> Self {
-        return MulticolorGradient(points: points, bias: value, power: power)
+        return MulticolorGradient(points: points, bias: value, power: power, colorInterpolation: colorInterpolation)
     }
     
     public func power(_ value: Float) -> Self {
-        return MulticolorGradient(points: points, bias: bias, power: value)
+        return MulticolorGradient(points: points, bias: bias, power: value, colorInterpolation: colorInterpolation)
+    }
+    
+    public func colorInterpolation(_ value: ColorInterpolation) -> Self {
+        return MulticolorGradient(points: points, bias: bias, power: power, colorInterpolation: value)
     }
 }
 
