@@ -13,16 +13,22 @@ public struct MulticolorGradient: UIViewControllerRepresentable {
     
     public func makeUIViewController(context: UIViewControllerRepresentableContext<MulticolorGradient>) -> MulticolorGradientViewController {
         let controller = MulticolorGradientViewController()
-        controller.points = points
-        controller.bias = bias
-        controller.power = power
+        controller.current.points = points
+        controller.current.bias = bias
+        controller.current.power = power
         return controller
     }
-
+    
     public func updateUIViewController(_ uiViewController: MulticolorGradientViewController, context: UIViewControllerRepresentableContext<MulticolorGradient>) {
-        uiViewController.points = points
-        uiViewController.power = power
-        uiViewController.bias = bias
+        
+        if let animation = context.transaction.animation?.customMirror.children.first?.value {
+            let params = MirrorAnimation.parse(mirror: Mirror(reflecting: animation))
+            uiViewController.animate(to: .init(points: points, bias: bias, power: power), animation: params)
+        } else {
+            uiViewController.current.points = points
+            uiViewController.current.power = power
+            uiViewController.current.bias = bias
+        }
     }
 }
 

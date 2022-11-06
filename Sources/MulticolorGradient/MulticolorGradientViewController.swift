@@ -46,9 +46,18 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
     var computePipelineState: MTLComputePipelineState?
     var commandQueue: MTLCommandQueue! = nil
 
-    var points: [ColorStop] = []
-    var bias: Float = 0.001
-    var power: Float = 2
+    struct GradientParameters {
+        var points: [ColorStop] = []
+        var bias: Float = 0.001
+        var power: Float = 2
+    }
+    
+    var current: GradientParameters = .init()
+    var nextGradient: GradientParameters?
+    
+    var duration: TimeInterval?
+    var elapsed: TimeInterval = 0.0
+    var previousFrameTime: Date = .init()
     
     var finishedCompiling: ((Bool, [CompilerErrorMessage]?) -> ())?
     
@@ -104,6 +113,13 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         return computeProgram
     }
     
+    func animate(to parameters: GradientParameters, animation: MirrorAnimation) {
+        current = computeParameters()
+        nextGradient = parameters
+        self.duration = animation.duration
+        elapsed = -animation.delay
+    }
+    
     public func mtkView(_ view: MTKView,
                  drawableSizeWillChange size: CGSize) {
         
@@ -112,11 +128,19 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
     public func draw(in view: MTKView) {
         guard let drawable = view.currentDrawable else { return }
         
+        let timeStep = Date().timeIntervalSince(previousFrameTime)
+        previousFrameTime = Date()
+        
+        updateAnimationIfNeeded(timeStep)
+        draw(with: computeParameters(), in: drawable)
+    }
+    
+    func draw(with parameters: GradientParameters, in drawable: CAMetalDrawable) {
         var shaderPoints: [(simd_float2, simd_float3)] = Array(repeating: (simd_float2(0.0, 0.0), simd_float3(0.0, 0.0, 0.0)),
                                                                count: 8)
         
-        for i in 0..<points.count {
-            let point = points[i]
+        for i in 0..<parameters.points.count {
+            let point = parameters.points[i]
             var r: CGFloat = 0
             var g: CGFloat = 0
             var b: CGFloat = 0
@@ -128,9 +152,9 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
             shaderPoints[i] = (simd_float2(Float(point.position.x), Float(point.position.y)), simd_float3(Float(r), Float(g), Float(b)))
         }
         
-        var uniforms = Uniforms(pointCount: simd_int1(points.count),
-                                bias: bias,
-                                power: power,
+        var uniforms = Uniforms(pointCount: simd_int1(parameters.points.count),
+                                bias: parameters.bias,
+                                power: parameters.power,
                                 point0: shaderPoints[0].0,
                                 point1: shaderPoints[1].0,
                                 point2: shaderPoints[2].0,
@@ -186,5 +210,40 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         }
         
         return outMessages
+    }
+}
+
+private extension MulticolorGradientViewController {
+    func updateAnimationIfNeeded(_ timeStep: TimeInterval) {
+        guard let duration, let nextGradient else {
+            return
+        }
+        
+        elapsed += timeStep
+        
+        if elapsed > duration {
+            current = nextGradient
+            self.duration = nil
+            self.nextGradient = nil
+        }
+    }
+    
+    func computeParameters() -> GradientParameters {
+        if let duration, let nextGradient, elapsed >= 0 {
+            var parameters: GradientParameters = .init()
+            parameters.power = current.power + (nextGradient.power - current.power) * Float(elapsed / duration)
+            parameters.bias = current.bias + (nextGradient.bias - current.bias) * Float(elapsed / duration)
+            
+            for i in 0..<nextGradient.points.count {
+                let position = UnitPoint(x: current.points[i].position.x + (nextGradient.points[i].position.x - current.points[i].position.x) * elapsed / duration,
+                                         y: current.points[i].position.y + (nextGradient.points[i].position.y - current.points[i].position.y) * elapsed / duration)
+                let p = ColorStop(position: position, color: nextGradient.points[i].color)
+                parameters.points.append(p)
+            }
+            
+            return parameters
+        } else {
+            return current
+        }
     }
 }
