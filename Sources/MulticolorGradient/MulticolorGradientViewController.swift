@@ -42,7 +42,7 @@ struct Uniforms {
 }
 
 public class MulticolorGradientViewController: UIViewController, MTKViewDelegate {
-    var mtkView: MTKView!
+    var mtkView: MTKView?
     var computePipelineState: MTLComputePipelineState?
     var commandQueue: MTLCommandQueue! = nil
 
@@ -86,6 +86,8 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         //start paused
         mtkView.isPaused = false
         
+        self.mtkView = mtkView
+        
         if setComputePipeline(device: defaultDevice) == nil {
             fatalError("Default fragment shader has problem compiling")
         }
@@ -122,11 +124,30 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         timeDirection = 1.0
         repeatForever = animation.repeatAnimation != nil && animation.repeatAnimation!.count == nil
         elapsed = -animation.delay
+        resumeAnimation()
+    }
+    
+    func update(with parameters: GradientParameters, colorInterpolation: MulticolorGradient.ColorInterpolation = .rgb) {
+        current.points = parameters.points
+        current.bias = parameters.bias
+        current.power = parameters.power
+        self.colorInterpolation = colorInterpolation
+        resumeAnimation()
+    }
+    
+    func pauseAnimation() {
+        mtkView?.isPaused = true
+    }
+    
+    func resumeAnimation() {
+        mtkView?.isPaused = false
+        previousFrameTime = Date()
     }
     
     public func mtkView(_ view: MTKView,
                  drawableSizeWillChange size: CGSize) {
-        
+        guard let drawable = view.currentDrawable else { return }
+        draw(with: computeParameters(), in: drawable)
     }
     
     public func draw(in view: MTKView) {
@@ -220,6 +241,7 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
 private extension MulticolorGradientViewController {
     func updateAnimationIfNeeded(_ timeStep: TimeInterval) {
         guard let duration, let nextGradient else {
+            pauseAnimation()
             return
         }
         

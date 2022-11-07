@@ -19,10 +19,8 @@ public struct MulticolorGradient: UIViewControllerRepresentable {
     
     public func makeUIViewController(context: UIViewControllerRepresentableContext<MulticolorGradient>) -> MulticolorGradientViewController {
         let controller = MulticolorGradientViewController()
-        controller.current.points = points
-        controller.current.bias = bias
-        controller.current.power = power
-        controller.colorInterpolation = colorInterpolation
+        controller.update(with: .init(points: points, bias: bias, power: power),
+                          colorInterpolation: colorInterpolation)
         return controller
     }
     
@@ -32,9 +30,8 @@ public struct MulticolorGradient: UIViewControllerRepresentable {
             let params = MirrorAnimation.parse(mirror: Mirror(reflecting: animation))
             uiViewController.animate(to: .init(points: points, bias: bias, power: power), animation: params)
         } else {
-            uiViewController.current.points = points
-            uiViewController.current.power = power
-            uiViewController.current.bias = bias
+            uiViewController.update(with: .init(points: points, bias: bias, power: power),
+                                    colorInterpolation: colorInterpolation)
         }
     }
 }
