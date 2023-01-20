@@ -39,18 +39,33 @@ public struct MulticolorGradient: UIViewControllerRepresentable {
 }
 
 extension MulticolorGradient {
+    
+    /// Bias value to avoid artefacts, default is 0.001
+    /// - Parameter value: bias value
+    /// - Returns: a multicolor gradient with a bias value
     public func bias(_ value: Float) -> Self {
         return MulticolorGradient(points: points, bias: value, power: power, noise: noise, colorInterpolation: colorInterpolation)
     }
     
+    /// Value to adjust the spread of the blur, default is 2.0
+    /// - Parameter value: power value
+    /// - Returns: a multicolor gradient with a power value
     public func power(_ value: Float) -> Self {
         return MulticolorGradient(points: points, bias: bias, power: value, noise: noise, colorInterpolation: colorInterpolation)
     }
     
+    
+    /// Set in which domain the color interpolation is done
+    /// - Parameter value: rgb or hsb
+    /// - Returns: a multicolor gradient with a power value
     public func colorInterpolation(_ value: ColorInterpolation) -> Self {
         return MulticolorGradient(points: points, bias: bias, power: power, noise: noise, colorInterpolation: value)
     }
     
+    
+    /// Set the percentage of noise that you want to add. Useful to avoid banding effect.
+    /// - Parameter value: noise percentage
+    /// - Returns: a multicolor gradient with a power value
     public func noise(_ value: Float) -> Self {
         return MulticolorGradient(points: points, bias: bias, power: power, noise: value, colorInterpolation: colorInterpolation)
     }
