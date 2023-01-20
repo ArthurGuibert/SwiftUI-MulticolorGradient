@@ -12,9 +12,17 @@ typedef struct {
     int32_t pointCount;
     float bias;
     float power;
+    float noise;
     float2 points[8];
     float3 colors[8];
 } Uniforms;
+
+float2 hash23(float3 p3)
+{
+    p3 = fract(p3 * float3(443.897, 441.423, .0973));
+    p3 += dot(p3, p3.yzx+19.19);
+    return fract((p3.xx+p3.yz)*p3.zy);
+}
 
 kernel void gradient(texture2d<float, access::write> output [[texture(4)]],
                      constant Uniforms& uniforms [[buffer(0)]],
@@ -46,6 +54,9 @@ kernel void gradient(texture2d<float, access::write> output [[texture(4)]],
         col += contribution[i] * inverseContribution * uniforms.colors[i];
     }
     
-    float4 color = float4(col, 1.0);
+    float whiteNoiseRand = sin(hash23(float3(uv.xy, 0)).x);
+    whiteNoiseRand *= uniforms.noise;
+    
+    float4 color = float4(col * (1.0 + float3(whiteNoiseRand)), 1.0);
     output.write(color, gid);
 }

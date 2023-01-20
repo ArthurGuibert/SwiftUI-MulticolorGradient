@@ -9,18 +9,12 @@ import UIKit
 import MetalKit
 import SwiftUI
 
-struct CompilerErrorMessage {
-    let lineNumber: Int
-    let columnNumber: Int
-    let error: String
-    let message: String
-}
-
-struct Uniforms {
+private struct Uniforms {
     let pointCount: simd_int1
     
     let bias: simd_float1
     let power: simd_float1
+    let noise: simd_float1
     
     let point0: simd_float2
     let point1: simd_float2
@@ -42,26 +36,25 @@ struct Uniforms {
 }
 
 public class MulticolorGradientViewController: UIViewController, MTKViewDelegate {
-    var mtkView: MTKView?
-    var computePipelineState: MTLComputePipelineState?
-    var commandQueue: MTLCommandQueue! = nil
+    private var mtkView: MTKView?
+    private var computePipelineState: MTLComputePipelineState?
+    private var commandQueue: MTLCommandQueue! = nil
 
     struct GradientParameters {
         var points: [ColorStop] = []
         var bias: Float = 0.001
         var power: Float = 2
+        var noise: Float = 0.05
     }
-    var colorInterpolation: MulticolorGradient.ColorInterpolation = .rgb
-    var current: GradientParameters = .init()
-    var nextGradient: GradientParameters?
+    private var colorInterpolation: MulticolorGradient.ColorInterpolation = .rgb
+    private var current: GradientParameters = .init()
+    private var nextGradient: GradientParameters?
     
-    var duration: TimeInterval?
-    var elapsed: TimeInterval = 0.0
-    var timeDirection: Double = 1
-    var repeatForever: Bool = false
-    var previousFrameTime: Date = .init()
-    
-    var finishedCompiling: ((Bool, [CompilerErrorMessage]?) -> ())?
+    private var duration: TimeInterval?
+    private var elapsed: TimeInterval = 0.0
+    private var timeDirection: Double = 1
+    private var repeatForever: Bool = false
+    private var previousFrameTime: Date = .init()
     
     public override func viewDidLoad() {
         super.viewDidLoad()
@@ -105,16 +98,10 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         return nil
     }
     
-    fileprivate func loadShaders(device: MTLDevice) -> MTLFunction? {
+    private func loadShaders(device: MTLDevice) -> MTLFunction? {
         guard let library = try? device.makeDefaultLibrary(bundle: Bundle.module)
               else { fatalError("Unable to create default library") }
-        let computeProgram = library.makeFunction(name: "gradient")
-        
-        if let onCompilerResult = finishedCompiling {
-            onCompilerResult(true, nil)
-        }
-        
-        return computeProgram
+        return library.makeFunction(name: "gradient")
     }
     
     func animate(to parameters: GradientParameters, animation: MirrorAnimation) {
@@ -131,23 +118,23 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         current.points = parameters.points
         current.bias = parameters.bias
         current.power = parameters.power
+        current.noise = parameters.noise
         self.colorInterpolation = colorInterpolation
         resumeAnimation()
     }
     
-    func pauseAnimation() {
+    private func pauseAnimation() {
         mtkView?.isPaused = true
     }
     
-    func resumeAnimation() {
+    private func resumeAnimation() {
         mtkView?.isPaused = false
         previousFrameTime = Date()
     }
     
     public func mtkView(_ view: MTKView,
-                 drawableSizeWillChange size: CGSize) {
-        guard let drawable = view.currentDrawable else { return }
-        draw(with: computeParameters(), in: drawable)
+                        drawableSizeWillChange size: CGSize) {
+        
     }
     
     public func draw(in view: MTKView) {
@@ -160,7 +147,7 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         draw(with: computeParameters(), in: drawable)
     }
     
-    func draw(with parameters: GradientParameters, in drawable: CAMetalDrawable) {
+    private func draw(with parameters: GradientParameters, in drawable: CAMetalDrawable) {
         var shaderPoints: [(simd_float2, simd_float3)] = Array(repeating: (simd_float2(0.0, 0.0), simd_float3(0.0, 0.0, 0.0)),
                                                                count: 8)
         
@@ -180,6 +167,7 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         var uniforms = Uniforms(pointCount: simd_int1(parameters.points.count),
                                 bias: parameters.bias,
                                 power: parameters.power,
+                                noise: parameters.noise,
                                 point0: shaderPoints[0].0,
                                 point1: shaderPoints[1].0,
                                 point2: shaderPoints[2].0,
@@ -214,28 +202,6 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         commandBuffer?.present(drawable)
         commandBuffer?.commit()
     }
-    
-    func parseCompilerOutput(_ compilerOutput: String) -> [CompilerErrorMessage] {
-        let components = compilerOutput.components(separatedBy: "program_source")
-        var outMessages = [CompilerErrorMessage]()
-        
-        for index in components.indices.dropFirst() {
-            let splitted = components[index].split(separator: ":")
-            
-            if splitted.count < 4 {
-                return outMessages
-            }
-            
-            if let line: Int = Int(splitted[0]),
-               let column: Int = Int(splitted[1]) {
-                let compilerMessage = CompilerErrorMessage(lineNumber: line, columnNumber: column, error: String(splitted[2]), message: String(splitted[3]))
-                
-                outMessages.append(compilerMessage)
-            }
-        }
-        
-        return outMessages
-    }
 }
 
 private extension MulticolorGradientViewController {
@@ -264,22 +230,23 @@ private extension MulticolorGradientViewController {
         }
     }
     
-    func computeParameters() -> GradientParameters {
+    private func computeParameters() -> GradientParameters {
         if let duration, let nextGradient, elapsed >= 0 {
             var parameters: GradientParameters = .init()
             let mappedTime = elapsed / duration
             parameters.power = current.power + (nextGradient.power - current.power) * Float(mappedTime)
             parameters.bias = current.bias + (nextGradient.bias - current.bias) * Float(mappedTime)
+            parameters.noise = current.noise + (nextGradient.noise - current.noise) * Float(mappedTime)
             
             for i in 0..<nextGradient.points.count {
                 let position = current.points[i].position.lerp(to: nextGradient.points[i].position, t: mappedTime)
                 let p: ColorStop
                 if colorInterpolation == .rgb {
                     p = ColorStop(position: position,
-                                      color: current.points[i].color.lerp(to: nextGradient.points[i].color, t: mappedTime))
+                                  color: current.points[i].color.lerp(to: nextGradient.points[i].color, t: mappedTime))
                 } else {
                     p = ColorStop(position: position,
-                                      color: current.points[i].color.lerpHSB(to: nextGradient.points[i].color, t: mappedTime))
+                                  color: current.points[i].color.lerpHSB(to: nextGradient.points[i].color, t: mappedTime))
                 }
                 parameters.points.append(p)
             }
@@ -291,13 +258,13 @@ private extension MulticolorGradientViewController {
     }
 }
 
-extension UnitPoint {
+private extension UnitPoint {
     func lerp(to: UnitPoint, t: Double) -> UnitPoint {
         return UnitPoint(x: x + (to.x - x) * t, y: y + (to.y - y) * t)
     }
 }
 
-extension Color {
+private extension Color {
     func lerp(to: Color, t: Double) -> Color {
         let uiColor = UIColor(self)
         var r: CGFloat = 0
