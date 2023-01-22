@@ -191,12 +191,15 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         computeEncoder?.setBytes(&uniforms, length: MemoryLayout<Uniforms>.size, index: 0)
         computeEncoder?.setTexture(drawable.texture, index: 4)
         
-        let threadGroupCount = MTLSizeMake(8, 8, 1)
-        let threadGroups = MTLSizeMake(drawable.texture.width / threadGroupCount.width,
-                                       drawable.texture.height / threadGroupCount.height,
-                                       1)
+        let w = computePipelineState!.threadExecutionWidth
+        let h = computePipelineState!.maxTotalThreadsPerThreadgroup / w
+        let threadGroupCount = MTLSizeMake(w, h, 1)
         
-        computeEncoder?.dispatchThreadgroups(threadGroups, threadsPerThreadgroup: threadGroupCount)
+        let threadsPerGrid = MTLSize(width: drawable.texture.width,
+                                     height: drawable.texture.height,
+                                     depth: 1)
+        
+        computeEncoder?.dispatchThreadgroups(threadsPerGrid, threadsPerThreadgroup: threadGroupCount)
         computeEncoder?.endEncoding()
         
         commandBuffer?.present(drawable)
