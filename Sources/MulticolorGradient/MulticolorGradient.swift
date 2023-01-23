@@ -11,7 +11,7 @@ public struct MulticolorGradient: UIViewControllerRepresentable {
         case rgb, hsb
     }
     
-    init(points: [ColorStop], bias: Float = 0.001, power: Float = 2.0, noise: Float = 0.05, colorInterpolation: ColorInterpolation = .rgb) {
+    public init(points: [ColorStop], bias: Float = 0.001, power: Float = 2.0, noise: Float = 0.05, colorInterpolation: ColorInterpolation = .rgb) {
         self.points = points
         self.bias = bias
         self.power = power
@@ -84,7 +84,27 @@ public struct ColorStop {
 @resultBuilder
 public struct MulticolorGradientPointBuilder {
     public static func buildBlock(_ cells: ColorStop...) -> [ColorStop] {
-      Array(cells)
+        Array(cells)
+    }
+
+    public static func buildArray(_ components: [[ColorStop]]) -> [ColorStop] {
+        components.flatMap { $0 }
+    }
+    
+    public static func buildIf(_ components: ColorStop?...) -> [ColorStop] {
+        components.compactMap { $0 }
+    }
+
+    public static func buildEither(first component: [ColorStop]) -> [ColorStop] {
+        component
+    }
+
+    public static func buildLimitedAvailability(_ component: [ColorStop]) -> [ColorStop] {
+        component
+    }
+
+    public static func buildOptional(_ component: [ColorStop]?) -> [ColorStop] {
+        component ?? []
     }
 }
 
