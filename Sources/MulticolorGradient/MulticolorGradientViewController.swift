@@ -185,21 +185,27 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
                                 color6: shaderPoints[6].1,
                                 color7: shaderPoints[7].1)
         
+        guard let computePipelineState else {
+            return
+        }
+        
         let commandBuffer = commandQueue.makeCommandBuffer()
         let computeEncoder = commandBuffer?.makeComputeCommandEncoder()
-        computeEncoder?.setComputePipelineState(computePipelineState!)
+        computeEncoder?.setComputePipelineState(computePipelineState)
         computeEncoder?.setBytes(&uniforms, length: MemoryLayout<Uniforms>.size, index: 0)
         computeEncoder?.setTexture(drawable.texture, index: 4)
         
-        let w = computePipelineState!.threadExecutionWidth
-        let h = computePipelineState!.maxTotalThreadsPerThreadgroup / w
-        let threadGroupCount = MTLSizeMake(w, h, 1)
+        let gridSize = MTLSize(width: drawable.texture.width,
+                               height: drawable.texture.height,
+                               depth: 1)
+        let threadGroupWidth = computePipelineState.threadExecutionWidth
+        let threadGroupHeight = computePipelineState.maxTotalThreadsPerThreadgroup / threadGroupWidth
+        let threadGroupSize = MTLSize(width: threadGroupWidth,
+                                      height: threadGroupHeight,
+                                      depth: 1)
         
-        let threadsPerGrid = MTLSize(width: drawable.texture.width,
-                                     height: drawable.texture.height,
-                                     depth: 1)
-        
-        computeEncoder?.dispatchThreadgroups(threadsPerGrid, threadsPerThreadgroup: threadGroupCount)
+        computeEncoder?.dispatchThreads(gridSize,
+                                        threadsPerThreadgroup: threadGroupSize)
         computeEncoder?.endEncoding()
         
         commandBuffer?.present(drawable)
@@ -235,6 +241,10 @@ private extension MulticolorGradientViewController {
     
     private func computeParameters() -> GradientParameters {
         if let duration, let nextGradient, elapsed >= 0 {
+            guard nextGradient.points.count == current.points.count else {
+                return nextGradient
+            }
+            
             var parameters: GradientParameters = .init()
             let mappedTime = elapsed / duration
             parameters.power = current.power + (nextGradient.power - current.power) * Float(mappedTime)
