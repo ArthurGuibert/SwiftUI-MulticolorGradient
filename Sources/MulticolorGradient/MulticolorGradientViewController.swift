@@ -239,7 +239,7 @@ private extension MulticolorGradientViewController {
         }
     }
     
-    private func computeParameters() -> GradientParameters {
+    func computeParameters() -> GradientParameters {
         if let duration, let nextGradient, elapsed >= 0 {
             guard nextGradient.points.count == current.points.count else {
                 return nextGradient
