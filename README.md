@@ -1,7 +1,7 @@
 # SwiftUI-MulticolorGradient
 A SwiftUI implementation of multiple color gradient 🌈
 
-<img src="https://user-images.githubusercontent.com/6124571/236790059-f93b820f-512e-4989-9529-bfbeff821cc4.PNG" width="240" /> <img src="https://user-images.githubusercontent.com/6124571/236790100-a88fe30e-9143-4ee6-b8ee-0e3462551ae6.gif" width="240" />
+<img src="https://user-images.githubusercontent.com/6124571/236790059-f93b820f-512e-4989-9529-bfbeff821cc4.PNG" width="180" /> <img src="https://user-images.githubusercontent.com/6124571/236790100-a88fe30e-9143-4ee6-b8ee-0e3462551ae6.gif" width="180" />
 
 ## Usage
 You can use it as a regular SwiftUI view
