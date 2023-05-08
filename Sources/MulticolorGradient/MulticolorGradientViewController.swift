@@ -75,8 +75,6 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         mtkView.preferredFramesPerSecond = 60
         mtkView.device = defaultDevice
         mtkView.framebufferOnly = false
-        
-        //start paused
         mtkView.isPaused = false
         
         self.mtkView = mtkView
