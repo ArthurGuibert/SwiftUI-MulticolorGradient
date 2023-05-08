@@ -30,7 +30,8 @@ kernel void gradient(texture2d<float, access::write> output [[texture(4)]],
 {
     int width = output.get_width();
     int height = output.get_height();
-    float2 uv = float2(gid) / float2(width, width);
+    float2 noise = hash23(float3(float2(gid) / float2(width, width), 0));
+    float2 uv = (float2(gid) + float2(sin(noise.x * 2 * M_PI_F), sin(noise.y * 2 * M_PI_F)) * uniforms.noise) / float2(width, width);
     
     float totalContribution = 0.0;
     float contribution[8];
@@ -54,9 +55,6 @@ kernel void gradient(texture2d<float, access::write> output [[texture(4)]],
         col += contribution[i] * inverseContribution * uniforms.colors[i];
     }
     
-    float whiteNoiseRand = sin(hash23(float3(uv.xy, 0)).x);
-    whiteNoiseRand *= uniforms.noise;
-    
-    float4 color = float4(col * (1.0 + float3(whiteNoiseRand)), 1.0);
+    float4 color = float4(col, 1.0);
     output.write(color, gid);
 }

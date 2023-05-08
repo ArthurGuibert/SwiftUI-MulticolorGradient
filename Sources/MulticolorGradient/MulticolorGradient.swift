@@ -11,7 +11,7 @@ public struct MulticolorGradient: UIViewControllerRepresentable {
         case rgb, hsb
     }
     
-    public init(points: [ColorStop], bias: Float = 0.001, power: Float = 2.0, noise: Float = 0.05, colorInterpolation: ColorInterpolation = .rgb) {
+    public init(points: [ColorStop], bias: Float = 0.001, power: Float = 2.0, noise: Float = 2.0, colorInterpolation: ColorInterpolation = .rgb) {
         self.points = points
         self.bias = bias
         self.power = power

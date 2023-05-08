@@ -44,7 +44,7 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         var points: [ColorStop] = []
         var bias: Float = 0.001
         var power: Float = 2
-        var noise: Float = 0.05
+        var noise: Float = 2.0
     }
     private var colorInterpolation: MulticolorGradient.ColorInterpolation = .rgb
     private var current: GradientParameters = .init()
