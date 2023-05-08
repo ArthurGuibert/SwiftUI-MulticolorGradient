@@ -192,18 +192,30 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         computeEncoder?.setComputePipelineState(computePipelineState)
         computeEncoder?.setBytes(&uniforms, length: MemoryLayout<Uniforms>.size, index: 0)
         computeEncoder?.setTexture(drawable.texture, index: 4)
-        
         let gridSize = MTLSize(width: drawable.texture.width,
-                               height: drawable.texture.height,
-                               depth: 1)
-        let threadGroupWidth = computePipelineState.threadExecutionWidth
-        let threadGroupHeight = computePipelineState.maxTotalThreadsPerThreadgroup / threadGroupWidth
-        let threadGroupSize = MTLSize(width: threadGroupWidth,
-                                      height: threadGroupHeight,
-                                      depth: 1)
+                                           height: drawable.texture.height,
+                                           depth: 1)
+                    let threadGroupWidth = computePipelineState.threadExecutionWidth
+                    let threadGroupHeight = computePipelineState.maxTotalThreadsPerThreadgroup / threadGroupWidth
+                    let threadGroupSize = MTLSize(width: threadGroupWidth,
+                                                  height: threadGroupHeight,
+                                                  depth: 1)
         
-        computeEncoder?.dispatchThreads(gridSize,
-                                        threadsPerThreadgroup: threadGroupSize)
+        if mtkView?.device?.supportsFeatureSet(.iOS_GPUFamily4_v1) ?? false {
+            
+            computeEncoder?.dispatchThreads(gridSize,
+                                            threadsPerThreadgroup: threadGroupSize)
+        } else {
+//            let tgSize = MTLSize(width: 1, height: 1, depth: 1);
+//            var tgCount = MTLSize(width: gridSize.width / tgSize.width, height: gridSize.height, depth: gridSize.depth)
+//            if gridSize.width % tgSize.width != 0 {
+//                tgCount.width += 1
+//            }
+//            computeEncoder?.dispatchThreads(tgCount,
+//                                            threadsPerThreadgroup: tgSize)
+            
+        }
+        
         computeEncoder?.endEncoding()
         
         commandBuffer?.present(drawable)

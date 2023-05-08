@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "swiftui-multicolorgradient",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ArthurGuibert/SwiftUI-MulticolorGradient.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "c9776e1e1848d458190a7e37cca569161c4178d6"
+      }
+    }
+  ],
+  "version" : 2
+}
