@@ -1,10 +1,10 @@
 # SwiftUI-MulticolorGradient
-A SwiftUI implementation of multiple color gradient 🌈
+A SwiftUI implementation of multiple color gradient. Like mesh gradient, but with a simpler and a more declarative way to build it 🌈
 
 <img src="https://user-images.githubusercontent.com/6124571/236790059-f93b820f-512e-4989-9529-bfbeff821cc4.PNG" width="180" /> <img src="https://user-images.githubusercontent.com/6124571/236790100-a88fe30e-9143-4ee6-b8ee-0e3462551ae6.gif" width="180" />
 
 ## Usage
-You can use it as a regular SwiftUI view
+You can use it as a regular SwiftUI view:
  ```swift
 MulticolorGradient {
     ColorStop(position: .top, color: .red)
@@ -14,6 +14,8 @@ MulticolorGradient {
 ```
    
 You can add up to 8 color stops (or points). Animations have a basic support: only linear animations are supported for now. 
+
+⚠️ Support for the the simulator is not there yet, please try on a real device.
 
 ## Installation
 
