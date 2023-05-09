@@ -15,8 +15,6 @@ MulticolorGradient {
    
 You can add up to 8 color stops (or points). Animations have a basic support: only linear animations are supported for now. 
 
-⚠️ Support for the the simulator is not there yet, please try on a real device.
-
 ## Installation
 
 ### Swift Package Manager
