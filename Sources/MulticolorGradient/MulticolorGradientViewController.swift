@@ -193,7 +193,7 @@ public class MulticolorGradientViewController: UIViewController, MTKViewDelegate
         computeEncoder?.setBytes(&uniforms, length: MemoryLayout<Uniforms>.size, index: 0)
         computeEncoder?.setTexture(drawable.texture, index: 4)
         
-        if mtkView?.device?.supportsFeatureSet(.iOS_GPUFamily4_v1) ?? false {
+        if mtkView?.device?.supportsFamily(.apple4) ?? false {
             let gridSize = MTLSize(width: drawable.texture.width,
                                    height: drawable.texture.height,
                                    depth: 1)
